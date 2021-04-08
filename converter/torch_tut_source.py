@@ -17,11 +17,8 @@ import torch.nn as nn
 from torch import optim
 from seq2seq_exp.data_handler import DataHandler
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-SOS_token = 0
-EOS_token = 1
-MAX_LENGTH = 10
-teacher_forcing_ratio = 0.5
+from converter.config import *
+
 
 class Lang:
     def __init__(self, name):
@@ -53,7 +50,7 @@ def readLangs(lang1, lang2, reverse=False):
     print("Reading lines...")
 
     # Read the file and split into lines
-    lines = open("../data/gb_data.train", encoding='utf-8').\
+    lines = open(data_path, encoding='utf-8').\
         read().strip().split('\n')
 
     # Split every line into pairs and normalize
