@@ -15,12 +15,19 @@ def save_model(encoder, decoder):
     torch.save(encoder.state_dict(), PATH_en)
     torch.save(decoder.state_dict(), PATH_de)
 
-def train_and_save(hidden_size,epochs_num, print_every):
+def train_and_save(hidden_size,epochs_num):
     input_lang, output_lang, pairs = prepareData('eng', 'gb', False)
     encoder1 = EncoderRNN(input_lang.n_words+1, hidden_size).to(device)
     attn_decoder1 = AttnDecoderRNN(hidden_size, output_lang.n_words+1, dropout_p=0.1).to(device)
-    trainIters(encoder1, attn_decoder1, input_lang, output_lang, pairs, epochs_num, print_every=print_every)
+    trainIters(encoder1, attn_decoder1, input_lang, output_lang, pairs, epochs_num)
+    save_model(encoder1,attn_decoder1)
+
+def keep_train_get_best(hidden_size, epochs_num):
+    input_lang, output_lang, pairs = prepareData('eng', 'gb', False)
+    encoder1 = EncoderRNN(input_lang.n_words+1, hidden_size).to(device)
+    attn_decoder1 = AttnDecoderRNN(hidden_size, output_lang.n_words+1, dropout_p=0.1).to(device)
+    trainIters(encoder1, attn_decoder1, input_lang, output_lang, pairs, epochs_num, save_during_train=True)
     save_model(encoder1,attn_decoder1)
 
 if __name__ == '__main__':
-    train_and_save(hidden_size=20,epochs_num=100000,print_every=500)
+    train_and_save(hidden_size=30,epochs_num=10)

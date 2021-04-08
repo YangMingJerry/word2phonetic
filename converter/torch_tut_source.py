@@ -16,9 +16,10 @@ import torch
 import torch.nn as nn
 from torch import optim
 from seq2seq_exp.data_handler import DataHandler
-
+from seq2seq_exp.UI import print_percent
 from converter.config import *
 
+time_stamp = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
 
 class Lang:
     def __init__(self, name):
@@ -36,6 +37,10 @@ class Lang:
 
     def addSentence(self, input):
         pass
+
+def save_model(encoder, decoder, path_en, path_de):
+    torch.save(encoder.state_dict(), path_en)
+    torch.save(decoder.state_dict(), path_de)
 
 def unicodeToAscii(s):
     return ''.join(
@@ -178,53 +183,54 @@ def timeSince(since, percent):
     rs = es - s
     return '%s (- %s)' % (asMinutes(s), asMinutes(rs))
 
-def trainIters(encoder, decoder,input_lang , output_lang, pairs, n_iters, print_every=1000, plot_every=100, learning_rate=0.01):
+def trainIters(encoder, decoder,input_lang , output_lang, pairs, n_iters, print_every=1000, plot_every=100, learning_rate=0.01, save_during_train = False):
     start = time.time()
     plot_losses = []
     print_loss_total = 0  # Reset every print_every
     plot_loss_total = 0  # Reset every plot_every
 
+    path_en = f'../model/best_encoder_{time_stamp}'
+    path_de = f'../model/best_decoder_{time_stamp}'
     encoder_optimizer = optim.SGD(encoder.parameters(), lr=learning_rate)
     decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate)
-    pairs_chosen = [random.choice(pairs) for i in range(n_iters)]
-    training_pairs = [tensorsFromPair(input_lang , output_lang, pairs_chosen[i])
-                      for i in range(n_iters)]
+    # pairs_chosen = [random.choice(pairs) for i in range(n_iters)]
+    # training_pairs = [tensorsFromPair(input_lang , output_lang, pairs_chosen[i])
+    #                   for i in range(n_iters)]
     criterion = nn.NLLLoss()
-
+    min_loss = 100
+    epoch_saved = 0
     for iter in range(1, n_iters + 1):
-        training_pair = training_pairs[iter - 1]
-        input_tensor = training_pair[0]
-        target_tensor = training_pair[1]
+        print_loss_total = 0  # Reset every print_every
+        plot_loss_total = 0
+        for i,pair in enumerate(pairs):
+            training_pair = tensorsFromPair(input_lang , output_lang, pair)
+            input_tensor = training_pair[0]
+            target_tensor = training_pair[1]
 
-        try:
             loss = train(input_tensor, target_tensor, encoder,
                      decoder, encoder_optimizer, decoder_optimizer, criterion)
-        except:
-            print(pairs_chosen[iter-1])
-        print_loss_total += loss
-        plot_loss_total += loss
+            print_loss_total += loss
+            plot_loss_total += loss
+            print_percent(i,len(pairs))
 
-        if iter % print_every == 0:
-            print_loss_avg = print_loss_total / print_every
-            print_loss_total = 0
-            print('%s (%d %d%%) %.4f' % (timeSince(start, iter / n_iters),
-                                         iter, iter / n_iters * 100, print_loss_avg))
-
-        if iter % plot_every == 0:
-            plot_loss_avg = plot_loss_total / plot_every
-            plot_losses.append(plot_loss_avg)
-            plot_loss_total = 0
-
-    showPlot(plot_losses)
+        print_loss_avg = print_loss_total / len(pairs)
+        print('%s (%d %d%%) %.4f' % (timeSince(start, iter / n_iters),
+                                     iter, iter / n_iters * 100, print_loss_avg))
+        plot_loss_avg = print_loss_total
+        plot_losses.append(plot_loss_avg)
+        if print_loss_avg < min_loss and save_during_train:
+            #save
+            save_model(encoder,decoder,path_en,path_de)
+            epoch_saved = iter
+        showPlot(plot_losses)
+    print(f'model of epoch {epoch_saved} is saved ')
 
 def showPlot(points):
     plt.figure()
-    fig, ax = plt.subplots()
-    # this locator puts ticks at regular intervals
-    loc = ticker.MultipleLocator(base=0.2)
-    ax.yaxis.set_major_locator(loc)
+    plt.subplots()
     plt.plot(points)
-    plt.savefig(f'losses{time.time()}.png')
+    plt.savefig(f'losses{time_stamp}.png')
+    plt.show()
 
 def evaluate(encoder, decoder, input_lang, output_lang, word, max_length=MAX_LENGTH):
     with torch.no_grad():
@@ -270,3 +276,5 @@ def evaluateRandomly(encoder, decoder, input_lang , output_lang, pairs, n=10):
         output_sentence = ''.join(output_words)
         print('<', output_sentence)
         print('')
+
+

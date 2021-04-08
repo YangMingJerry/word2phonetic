@@ -8,11 +8,11 @@ from converter.torch_tut_source import device,train,trainIters,prepareLang,evalu
 from seq2seq_exp.data_handler import DataHandler
 from model.torch_model_tut import EncoderRNN, AttnDecoderRNN
 
-MAX_LENGTH = 10
+from converter.config import *
 data_handler = DataHandler()
 
-path_en = '/home/ming/PycharmProjects/g2x_exp/model/encoder_2021-04-08-10-48-44'
-path_de = '/home/ming/PycharmProjects/g2x_exp/model/decoder_2021-04-08-10-48-44'
+path_en = '/home/ming/PycharmProjects/g2x_exp/model/encoder_2021-04-08-15-36-58'
+path_de = '/home/ming/PycharmProjects/g2x_exp/model/decoder_2021-04-08-15-36-58'
 
 
 def load_model_locally(path_en,path_de):
